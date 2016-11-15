@@ -157,8 +157,8 @@ void MainWindow::on_Button_casco_clicked()
         escapeKey=cvWaitKey(10);
         //imwrite("/home/pedro/PDI-OPENCV/SURF_6/bookIP3.jpg", img_matches);
 
-        if(frameCount>10)
-           escapeKey='q';
+//        if(frameCount>10)
+//           escapeKey='q';
     }
 
     //average frames per second
