@@ -28,6 +28,9 @@ private slots:
     void on_Button_salir_clicked();
     void on_Button_reset_clicked();
     void on_Button_tipo_trabajo_clicked();
+    void analizador(Mat);
+signals:
+    void surf_listo(Mat);
 
 private:
     Ui::MainWindow *ui;

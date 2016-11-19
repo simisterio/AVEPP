@@ -24,6 +24,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     salida1 = NULL;
+    QObject::connect(this, SIGNAL(surf_listo(Mat)), this, SLOT(analizador(Mat)));
 }
 
 MainWindow::~MainWindow()
@@ -34,8 +35,44 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_Button_casco_clicked()
 {
-    //load training image
-    Mat object = imread ("/home/pedro/PDI-OPENCV/SURF_6/CASCO_opt.png", CV_LOAD_IMAGE_GRAYSCALE);
+    Mat object = imread ("/home/pedro/PDI-OPENCV/proyecto_PDI/CASCO_opt.png", CV_LOAD_IMAGE_GRAYSCALE);
+    emit surf_listo(object);
+}
+
+void MainWindow::on_Button_guantes_clicked()
+{
+    Mat object = imread ("/home/pedro/PDI-OPENCV/proyecto_PDI/pelota.png", CV_LOAD_IMAGE_GRAYSCALE);
+    emit surf_listo(object);
+}
+
+void MainWindow::on_Button_mascara_clicked()
+{
+    Mat object = imread ("/home/pedro/PDI-OPENCV/proyecto_PDI/casco_sin.png", CV_LOAD_IMAGE_GRAYSCALE);
+    emit surf_listo(object);
+}
+
+void MainWindow::on_Button_chaleco_clicked()
+{
+    Mat object = imread ("/home/pedro/PDI-OPENCV/proyecto_PDI/book.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+    emit surf_listo(object);
+}
+
+void MainWindow::on_Button_salir_clicked()
+{
+    qApp->quit();
+}
+
+void MainWindow::on_Button_reset_clicked()
+{
+
+}
+
+void MainWindow::on_Button_tipo_trabajo_clicked()
+{
+
+}
+
+void MainWindow::analizador(Mat object) {
     double t; //timing variable
 
     //SURF Detector, and descriptor parameters
@@ -46,10 +83,6 @@ void MainWindow::on_Button_casco_clicked()
     //SURF Detector, and descriptor parameters, match object initialization
     Ptr<SURF> detector = SURF::create( minHess );
     detector->detectAndCompute( object, Mat(), kpObject, desObject );
-    //SurfFeatureDetector detector(minHess);
-    //detector.detect(object, kpObject);
-    //SurfDescriptorExtractor extractor;
-    //extractor.compute(object, kpObject, desObject);
 
     FlannBasedMatcher matcher;
 
@@ -75,139 +108,101 @@ void MainWindow::on_Button_casco_clicked()
         //thresholdGoodMatches=8;
         cout<<thresholdGoodMatches<<endl;
 
-    if(true)
-    {
-        t = (double)getTickCount();
-    }
-
-    while (escapeKey != 'q')
-    {
-        frameCount++;
-        Mat frame;
-        Mat image;
-        cap>>frame;
-        cvtColor(frame, image, CV_RGB2GRAY);
-
-        Mat des_image, img_matches, H;
-        vector<KeyPoint> kp_image;
-        vector<vector<DMatch > > matches;
-        vector<DMatch > good_matches;
-        vector<Point2f> obj;
-        vector<Point2f> scene;
-        vector<Point2f> scene_corners(4);
-
-        detector->detectAndCompute( image, Mat(), kp_image, des_image );
-        //detector.detect( image, kp_image );
-        //extractor.compute( image, kp_image, des_image );
-
-        if(kp_image.size()>=2 && kpObject.size()>=2)
+        if(true)
         {
-            matcher.knnMatch(desObject, des_image, matches, 2);
+            t = (double)getTickCount();
         }
 
-        for(int i = 0; i < min(des_image.rows-1,(int) matches.size()); i++) //THIS LOOP IS SENSITIVE TO SEGFAULTS
+        while (escapeKey != 'q')
         {
-            if((matches[i][0].distance < thresholdMatchingNN*(matches[i][1].distance)) && ((int) matches[i].size()<=2 && (int) matches[i].size()>0))
+            frameCount++;
+            Mat frame;
+            Mat image;
+            cap>>frame;
+            cvtColor(frame, image, CV_RGB2GRAY);
+
+            Mat des_image, img_matches, H;
+            vector<KeyPoint> kp_image;
+            vector<vector<DMatch > > matches;
+            vector<DMatch > good_matches;
+            vector<Point2f> obj;
+            vector<Point2f> scene;
+            vector<Point2f> scene_corners(4);
+
+            detector->detectAndCompute( image, Mat(), kp_image, des_image );
+
+            if(kp_image.size()>=2 && kpObject.size()>=2)
             {
-                good_matches.push_back(matches[i][0]);
-            }
-        }
-
-        //if (good_matches.size()<1)
-        //	good_matches.resize(0,cv::DMatch);
-
-        //Draw only "good" matches
-        drawMatches( object, kpObject, image, kp_image, good_matches, img_matches, Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-
-        if (good_matches.size() >= thresholdGoodMatches)
-        {
-            //Display that the object is found
-            putText(img_matches, "Elemento Encontrado", cvPoint(10,50),FONT_HERSHEY_COMPLEX_SMALL, 2, cvScalar(0,0,250), 1, CV_AA);
-            for(unsigned int i = 0; i < good_matches.size(); i++ )
-            {
-                //Get the keypoints from the good matches
-                obj.push_back( kpObject[ good_matches[i].queryIdx ].pt );
-                scene.push_back( kp_image[ good_matches[i].trainIdx ].pt );
+                matcher.knnMatch(desObject, des_image, matches, 2);
             }
 
-            H = findHomography( obj, scene, CV_RANSAC );
+            for(int i = 0; i < min(des_image.rows-1,(int) matches.size()); i++) //THIS LOOP IS SENSITIVE TO SEGFAULTS
+            {
+                if((matches[i][0].distance < thresholdMatchingNN*(matches[i][1].distance)) && ((int) matches[i].size()<=2 && (int) matches[i].size()>0))
+                {
+                    good_matches.push_back(matches[i][0]);
+                }
+            }
 
-//            perspectiveTransform( obj_corners, scene_corners, H);
+            //if (good_matches.size()<1)
+            //	good_matches.resize(0,cv::DMatch);
 
-//            //Draw lines between the corners (the mapped object in the scene image )
-//            line( img_matches, scene_corners[0] + Point2f( object.cols, 0), scene_corners[1] + Point2f( object.cols, 0), Scalar(0, 255, 0), 4 );
-//            line( img_matches, scene_corners[1] + Point2f( object.cols, 0), scene_corners[2] + Point2f( object.cols, 0), Scalar( 0, 255, 0), 4 );
-//            line( img_matches, scene_corners[2] + Point2f( object.cols, 0), scene_corners[3] + Point2f( object.cols, 0), Scalar( 0, 255, 0), 4 );
-//            line( img_matches, scene_corners[3] + Point2f( object.cols, 0), scene_corners[0] + Point2f( object.cols, 0), Scalar( 0, 255, 0), 4 );
+            //Draw only "good" matches
+            drawMatches( object, kpObject, image, kp_image, good_matches, img_matches, Scalar::all(-1), Scalar::all(-1), vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+
+            if (good_matches.size() >= thresholdGoodMatches)
+            {
+                //Display that the object is found
+                putText(img_matches, "Elemento Encontrado", cvPoint(10,50),FONT_HERSHEY_COMPLEX_SMALL, 2, cvScalar(0,0,250), 1, CV_AA);
+                for(unsigned int i = 0; i < good_matches.size(); i++ )
+                {
+                    //Get the keypoints from the good matches
+                    obj.push_back( kpObject[ good_matches[i].queryIdx ].pt );
+                    scene.push_back( kp_image[ good_matches[i].trainIdx ].pt );
+                }
+
+                H = findHomography( obj, scene, CV_RANSAC );
+
+//                perspectiveTransform( obj_corners, scene_corners, H);
+
+                //Draw lines between the corners (the mapped object in the scene image )
+//                line( img_matches, scene_corners[0] + Point2f( object.cols, 0), scene_corners[1] + Point2f( object.cols, 0), Scalar(0, 255, 0), 4 );
+//                line( img_matches, scene_corners[1] + Point2f( object.cols, 0), scene_corners[2] + Point2f( object.cols, 0), Scalar( 0, 255, 0), 4 );
+//                line( img_matches, scene_corners[2] + Point2f( object.cols, 0), scene_corners[3] + Point2f( object.cols, 0), Scalar( 0, 255, 0), 4 );
+//                line( img_matches, scene_corners[3] + Point2f( object.cols, 0), scene_corners[0] + Point2f( object.cols, 0), Scalar( 0, 255, 0), 4 );
+            }
+            else
+            {
+                putText(img_matches, "", cvPoint(10,50), FONT_HERSHEY_COMPLEX_SMALL, 3, cvScalar(0,0,250), 1, CV_AA);
+            }
+
+            //Show detected matches
+            cv::resize(img_matches, img_matches,cv::Size(850,630));
+            salida1 = new QImage(MatToQImage(img_matches));
+            QLabel *label1 = new QLabel;
+            label1->setPixmap(QPixmap::fromImage(*salida1, Qt::AutoColor));
+            ui->scrollArea_Video->setWidget(label1);
+
+            escapeKey=cvWaitKey(10);
+            //imwrite("/home/pedro/PDI-OPENCV/SURF_6/bookIP3.jpg", img_matches);
+
+            if(frameCount>10)
+                escapeKey='q';
         }
-        else
+
+        //average frames per second
+        if(true)
         {
-            putText(img_matches, "", cvPoint(10,50), FONT_HERSHEY_COMPLEX_SMALL, 3, cvScalar(0,0,250), 1, CV_AA);
+            t = ((double)getTickCount() - t)/getTickFrequency();
+            cout<<t<<" "<<frameCount/t<<endl;
+            cvWaitKey(0);
         }
 
-        //Show detected matches
-        //imshow( "Good Matches", img_matches );
-
-        cv::resize(img_matches, img_matches,cv::Size(850,630));
-        salida1 = new QImage(MatToQImage(img_matches));
-        QLabel *label1 = new QLabel;
-        label1->setPixmap(QPixmap::fromImage(*salida1, Qt::AutoColor));
-        ui->scrollArea_Video->setWidget(label1);
-
-        escapeKey=cvWaitKey(10);
-        //imwrite("/home/pedro/PDI-OPENCV/SURF_6/bookIP3.jpg", img_matches);
-
-//        if(frameCount>10)
-//           escapeKey='q';
-    }
-
-    //average frames per second
-    if(true)
-    {
-        t = ((double)getTickCount() - t)/getTickFrequency();
-        cout<<t<<" "<<frameCount/t<<endl;
-        cvWaitKey(0);
-    }
-
-    frameCount=0;
-    escapeKey='a';
+        frameCount=0;
+        escapeKey='a';
     }
 
     //Release camera and exit
     cap.release();
     //return 0;
-
-
-}
-
-void MainWindow::on_Button_guantes_clicked()
-{
-
-}
-
-void MainWindow::on_Button_mascara_clicked()
-{
-
-}
-
-void MainWindow::on_Button_chaleco_clicked()
-{
-
-}
-
-
-
-void MainWindow::on_Button_salir_clicked()
-{
-    qApp->quit();
-}
-
-void MainWindow::on_Button_reset_clicked()
-{
-
-}
-
-void MainWindow::on_Button_tipo_trabajo_clicked()
-{
-
 }
